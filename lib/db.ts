@@ -36,5 +36,12 @@ export interface UserConfig {
   api_password: string;
   webhook_url: string;
   enabled: boolean;
+  morning_start: number;
+  morning_end: number;
+  evening_start: number;
+  evening_end: number;
+  interval_minutes: number;
+  last_morning_sent: string | null;
+  last_evening_sent: string | null;
   updated_at: string;
 }

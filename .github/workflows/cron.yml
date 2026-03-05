@@ -2,11 +2,10 @@ name: Daily Report Reminder Cron
 
 on:
   schedule:
-    # Chạy mỗi phút trong khung giờ UTC 4:00-5:59 (ICT 11:00-12:59) - nhắc đầu ngày
-    - cron: "* 4,5 * * 1-5"
-    # Chạy mỗi phút trong khung giờ UTC 12:00-13:59 (ICT 19:00-20:59) - nhắc cuối ngày
-    - cron: "* 12,13 * * 1-5"
-  # Cho phép chạy thủ công để test
+    # Mỗi phút, thứ 2-6, giờ UTC 1-13 (ICT 8:00-20:00)
+    # Bao phủ toàn bộ khung giờ làm việc VN để hỗ trợ mọi cấu hình user
+    # API endpoint tự kiểm tra schedule + interval từng user trong DB
+    - cron: "* 1-13 * * 1-5"
   workflow_dispatch:
 
 jobs:

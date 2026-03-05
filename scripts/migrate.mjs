@@ -27,4 +27,13 @@ await sql`
   )
 `;
 
-console.log("Done. Tables: users, user_configs created.");
+// v2: add schedule columns
+await sql`ALTER TABLE user_configs ADD COLUMN IF NOT EXISTS morning_start INTEGER NOT NULL DEFAULT 11`;
+await sql`ALTER TABLE user_configs ADD COLUMN IF NOT EXISTS morning_end INTEGER NOT NULL DEFAULT 12`;
+await sql`ALTER TABLE user_configs ADD COLUMN IF NOT EXISTS evening_start INTEGER NOT NULL DEFAULT 19`;
+await sql`ALTER TABLE user_configs ADD COLUMN IF NOT EXISTS evening_end INTEGER NOT NULL DEFAULT 20`;
+await sql`ALTER TABLE user_configs ADD COLUMN IF NOT EXISTS interval_minutes INTEGER NOT NULL DEFAULT 1`;
+await sql`ALTER TABLE user_configs ADD COLUMN IF NOT EXISTS last_morning_sent TIMESTAMPTZ`;
+await sql`ALTER TABLE user_configs ADD COLUMN IF NOT EXISTS last_evening_sent TIMESTAMPTZ`;
+
+console.log("Done. Tables: users, user_configs created/updated.");

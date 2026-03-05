@@ -21,9 +21,18 @@ interface StatusResult {
   dayKey: string;
 }
 
+const HOURS = Array.from({ length: 24 }, (_, i) => i);
+
 export function DashboardClient({ displayName, config, status }: Props) {
   const [saving, startSave] = useTransition();
   const [loggingOut, startLogout] = useTransition();
+
+  const selectStyle: React.CSSProperties = {
+    ...styles.input,
+    width: "auto",
+    minWidth: 70,
+    padding: "8px 10px",
+  };
 
   return (
     <div style={{ ...styles.page, padding: "24px 16px" }}>
@@ -104,33 +113,9 @@ export function DashboardClient({ displayName, config, status }: Props) {
           )}
         </div>
 
-        {/* Schedule info */}
-        <div
-          style={{
-            ...styles.card,
-            marginBottom: 16,
-            background: "#e8f4fd",
-            boxShadow: "none",
-            border: "1px solid #bee3f8",
-          }}
-        >
-          <h3 style={{ marginTop: 0, marginBottom: 8, fontSize: 15 }}>⏰ Lịch nhắc nhở tự động</h3>
-          <ul style={{ margin: 0, paddingLeft: 20, fontSize: 14, lineHeight: 1.8 }}>
-            <li>
-              <strong>11:00 – 12:00</strong>: Nhắc báo cáo đầu ngày (mỗi phút)
-            </li>
-            <li>
-              <strong>19:00 – 20:00</strong>: Nhắc báo cáo cuối ngày + check out (mỗi phút)
-            </li>
-          </ul>
-          <p style={{ margin: "8px 0 0", fontSize: 13, color: "#555" }}>
-            Thứ 2 – Thứ 6. Tự động dừng khi đã hoàn thành.
-          </p>
-        </div>
-
         {/* Config form */}
         <div style={styles.card}>
-          <h3 style={{ marginTop: 0, marginBottom: 16 }}>⚙️ Cấu hình tài khoản</h3>
+          <h3 style={{ marginTop: 0, marginBottom: 16 }}>⚙️ Cấu hình</h3>
 
           <form
             action={saveConfig}
@@ -140,8 +125,12 @@ export function DashboardClient({ displayName, config, status }: Props) {
               startSave(() => saveConfig(fd));
             }}
           >
+            {/* Account section */}
+            <p style={{ fontSize: 13, fontWeight: 700, color: "#555", margin: "0 0 12px" }}>
+              Tài khoản Alliance
+            </p>
             <div style={styles.formGroup}>
-              <label style={styles.label}>Email tài khoản Alliance</label>
+              <label style={styles.label}>Email</label>
               <input
                 name="api_username"
                 type="email"
@@ -152,7 +141,7 @@ export function DashboardClient({ displayName, config, status }: Props) {
               />
             </div>
             <div style={styles.formGroup}>
-              <label style={styles.label}>Mật khẩu Alliance</label>
+              <label style={styles.label}>Mật khẩu</label>
               <input
                 name="api_password"
                 type="password"
@@ -172,10 +161,77 @@ export function DashboardClient({ displayName, config, status }: Props) {
                 placeholder="https://chat.googleapis.com/v1/spaces/..."
                 style={styles.input}
               />
-              <p style={{ margin: "4px 0 0", fontSize: 12, color: "#888" }}>
-                Vào Google Chat → Tên space → Manage webhooks → Add webhook
-              </p>
             </div>
+
+            {/* Schedule section */}
+            <div style={{ borderTop: "1px solid #f0f0f0", margin: "20px 0 16px", paddingTop: 16 }}>
+              <p style={{ fontSize: 13, fontWeight: 700, color: "#555", margin: "0 0 12px" }}>
+                ⏰ Lịch nhắc nhở
+              </p>
+
+              {/* Morning */}
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Nhắc báo cáo đầu ngày</label>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <span style={{ fontSize: 13 }}>Từ</span>
+                  <select name="morning_start" defaultValue={config?.morning_start ?? 11} style={selectStyle}>
+                    {HOURS.map((h) => (
+                      <option key={h} value={h}>
+                        {String(h).padStart(2, "0")}:00
+                      </option>
+                    ))}
+                  </select>
+                  <span style={{ fontSize: 13 }}>đến</span>
+                  <select name="morning_end" defaultValue={config?.morning_end ?? 12} style={selectStyle}>
+                    {HOURS.map((h) => (
+                      <option key={h} value={h}>
+                        {String(h).padStart(2, "0")}:00
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Evening */}
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Nhắc báo cáo cuối ngày</label>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <span style={{ fontSize: 13 }}>Từ</span>
+                  <select name="evening_start" defaultValue={config?.evening_start ?? 19} style={selectStyle}>
+                    {HOURS.map((h) => (
+                      <option key={h} value={h}>
+                        {String(h).padStart(2, "0")}:00
+                      </option>
+                    ))}
+                  </select>
+                  <span style={{ fontSize: 13 }}>đến</span>
+                  <select name="evening_end" defaultValue={config?.evening_end ?? 20} style={selectStyle}>
+                    {HOURS.map((h) => (
+                      <option key={h} value={h}>
+                        {String(h).padStart(2, "0")}:00
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Interval */}
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Khoảng cách giữa mỗi lần nhắc</label>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <select name="interval_minutes" defaultValue={config?.interval_minutes ?? 1} style={selectStyle}>
+                    {[1, 2, 3, 5, 10, 15, 20, 30, 60].map((m) => (
+                      <option key={m} value={m}>
+                        {m}
+                      </option>
+                    ))}
+                  </select>
+                  <span style={{ fontSize: 13 }}>phút / lần</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Enable toggle */}
             <div style={{ ...styles.formGroup, display: "flex", alignItems: "center", gap: 8 }}>
               <input
                 name="enabled"

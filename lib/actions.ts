@@ -87,16 +87,28 @@ export async function saveConfig(formData: FormData): Promise<void> {
   const apiPassword = formData.get("api_password") as string;
   const webhookUrl = (formData.get("webhook_url") as string).trim();
   const enabled = formData.get("enabled") === "on";
+  const morningStart = parseInt(formData.get("morning_start") as string) || 11;
+  const morningEnd = parseInt(formData.get("morning_end") as string) || 12;
+  const eveningStart = parseInt(formData.get("evening_start") as string) || 19;
+  const eveningEnd = parseInt(formData.get("evening_end") as string) || 20;
+  const intervalMinutes = parseInt(formData.get("interval_minutes") as string) || 1;
 
   await query`
-    INSERT INTO user_configs (user_id, api_username, api_password, webhook_url, enabled, updated_at)
-    VALUES (${session.userId}, ${apiUsername}, ${apiPassword}, ${webhookUrl}, ${enabled}, NOW())
+    INSERT INTO user_configs (user_id, api_username, api_password, webhook_url, enabled,
+      morning_start, morning_end, evening_start, evening_end, interval_minutes, updated_at)
+    VALUES (${session.userId}, ${apiUsername}, ${apiPassword}, ${webhookUrl}, ${enabled},
+      ${morningStart}, ${morningEnd}, ${eveningStart}, ${eveningEnd}, ${intervalMinutes}, NOW())
     ON CONFLICT (user_id) DO UPDATE SET
-      api_username = EXCLUDED.api_username,
-      api_password = EXCLUDED.api_password,
-      webhook_url  = EXCLUDED.webhook_url,
-      enabled      = EXCLUDED.enabled,
-      updated_at   = NOW()
+      api_username     = EXCLUDED.api_username,
+      api_password     = EXCLUDED.api_password,
+      webhook_url      = EXCLUDED.webhook_url,
+      enabled          = EXCLUDED.enabled,
+      morning_start    = EXCLUDED.morning_start,
+      morning_end      = EXCLUDED.morning_end,
+      evening_start    = EXCLUDED.evening_start,
+      evening_end      = EXCLUDED.evening_end,
+      interval_minutes = EXCLUDED.interval_minutes,
+      updated_at       = NOW()
   `;
 
   redirect("/dashboard");

@@ -20,18 +20,9 @@ export async function GET(req: NextRequest) {
   );
   const hour = nowVN.getHours();
   const minute = nowVN.getMinutes();
+  const nowISO = new Date().toISOString();
 
-  const isMorningWindow = hour === 11;
-  const isEveningWindow = hour === 19;
-
-  if (!isMorningWindow && !isEveningWindow) {
-    return NextResponse.json({
-      skipped: true,
-      reason: "Outside notification windows",
-      currentHourVN: hour,
-    });
-  }
-
+  // Lấy tất cả users đã bật và có đủ cấu hình
   const configs = (await query`
     SELECT uc.*, u.display_name
     FROM user_configs uc
@@ -52,6 +43,29 @@ export async function GET(req: NextRequest) {
 
   const results = await Promise.allSettled(
     configs.map(async (cfg) => {
+      // Kiểm tra user này có nằm trong khung giờ của họ không
+      const inMorning = hour >= cfg.morning_start && hour < cfg.morning_end;
+      const inEvening = hour >= cfg.evening_start && hour < cfg.evening_end;
+
+      if (!inMorning && !inEvening) {
+        return { user: cfg.display_name, notified: false, reason: "Outside user schedule" };
+      }
+
+      // Kiểm tra interval — đã gửi quá gần chưa?
+      const lastSentField = inMorning ? cfg.last_morning_sent : cfg.last_evening_sent;
+      if (lastSentField) {
+        const lastSent = new Date(lastSentField).getTime();
+        const elapsed = (Date.now() - lastSent) / 60000; // phút
+        if (elapsed < cfg.interval_minutes) {
+          return {
+            user: cfg.display_name,
+            notified: false,
+            reason: `Interval not reached (${Math.round(elapsed)}/${cfg.interval_minutes}min)`,
+          };
+        }
+      }
+
+      // Login + check status
       const token = await login(cfg.api_username, cfg.api_password);
       const data = await fetchDiligenceData(token);
       const rows: Record<string, unknown>[] = data?.Data?.Data ?? [];
@@ -63,7 +77,7 @@ export async function GET(req: NextRequest) {
       let message = "";
       let shouldNotify = false;
 
-      if (isMorningWindow && !status.hasStartReport) {
+      if (inMorning && !status.hasStartReport) {
         message =
           `⏰ *Nhắc nhở báo cáo đầu ngày - ${dateStr}* (${timeStr})\n\n` +
           `❌ *${userName}* chưa báo cáo task đầu ngày!\n\n` +
@@ -71,7 +85,7 @@ export async function GET(req: NextRequest) {
         shouldNotify = true;
       }
 
-      if (isEveningWindow && !status.hasEndReport) {
+      if (inEvening && !status.hasEndReport) {
         message =
           `🌙 *Nhắc nhở báo cáo cuối ngày - ${dateStr}* (${timeStr})\n\n` +
           `❌ *${userName}* chưa báo cáo cuối ngày!\n\n` +
@@ -84,6 +98,14 @@ export async function GET(req: NextRequest) {
       }
 
       await sendWebhookNotification(cfg.webhook_url, message);
+
+      // Cập nhật last sent timestamp
+      if (inMorning) {
+        await query`UPDATE user_configs SET last_morning_sent = ${nowISO} WHERE id = ${cfg.id}`;
+      } else {
+        await query`UPDATE user_configs SET last_evening_sent = ${nowISO} WHERE id = ${cfg.id}`;
+      }
+
       return { user: userName, notified: true, message };
     })
   );
