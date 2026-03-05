@@ -3,8 +3,6 @@ name: Daily Report Reminder Cron
 on:
   schedule:
     # Mỗi phút, thứ 2-6, giờ UTC 1-13 (ICT 8:00-20:00)
-    # Bao phủ toàn bộ khung giờ làm việc VN để hỗ trợ mọi cấu hình user
-    # API endpoint tự kiểm tra schedule + interval từng user trong DB
     - cron: "* 1-13 * * 1-5"
   workflow_dispatch:
 
@@ -14,6 +12,14 @@ jobs:
     steps:
       - name: Call cron endpoint
         run: |
-          curl -sf \
+          RESPONSE=$(curl -sS -L -w "\nHTTP_CODE:%{http_code}" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
-            "${{ secrets.APP_URL }}/api/cron/check"
+            "${{ secrets.APP_URL }}/api/cron/check")
+          HTTP_CODE=$(echo "$RESPONSE" | grep "HTTP_CODE:" | cut -d: -f2)
+          BODY=$(echo "$RESPONSE" | sed '/HTTP_CODE:/d')
+          echo "Status: $HTTP_CODE"
+          echo "Response: $BODY"
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "::error::Cron returned HTTP $HTTP_CODE"
+            exit 1
+          fi
