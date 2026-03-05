@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDb } from "@/lib/db";
+import { query } from "@/lib/db";
 import {
   login,
   fetchDiligenceData,
@@ -8,10 +8,6 @@ import {
   sendWebhookNotification,
 } from "@/lib/diligence";
 import type { UserConfig } from "@/lib/db";
-
-// Vercel Cron schedule (vercel.json): "* 4,5,12,13 * * 1-5"
-// UTC 04-05 = ICT 11-12 (nhắc đầu ngày)
-// UTC 12-13 = ICT 19-20 (nhắc cuối ngày)
 
 export async function GET(req: NextRequest) {
   const authHeader = req.headers.get("authorization");
@@ -36,9 +32,7 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  // Lấy tất cả users đã bật nhắc nhở và có đủ cấu hình
-  const sql = getDb();
-  const configs = (await sql`
+  const configs = (await query`
     SELECT uc.*, u.display_name
     FROM user_configs uc
     JOIN users u ON u.id = uc.user_id
@@ -46,7 +40,7 @@ export async function GET(req: NextRequest) {
       AND uc.api_username <> ''
       AND uc.api_password <> ''
       AND uc.webhook_url <> ''
-  `) as (UserConfig & { display_name: string })[];
+  `) as unknown as (UserConfig & { display_name: string })[];
 
   if (configs.length === 0) {
     return NextResponse.json({ skipped: true, reason: "No enabled configs" });
@@ -58,7 +52,6 @@ export async function GET(req: NextRequest) {
 
   const results = await Promise.allSettled(
     configs.map(async (cfg) => {
-      // Login để lấy token mới
       const token = await login(cfg.api_username, cfg.api_password);
       const data = await fetchDiligenceData(token);
       const rows: Record<string, unknown>[] = data?.Data?.Data ?? [];

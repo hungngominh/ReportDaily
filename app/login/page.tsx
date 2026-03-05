@@ -1,11 +1,13 @@
 import { loginWeb } from "@/lib/actions";
 import { styles } from "@/lib/styles";
 
-export default function LoginPage({
+export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: { error?: string };
+  searchParams: Promise<{ error?: string }>;
 }) {
+  const { error } = await searchParams;
+
   return (
     <div
       style={{
@@ -24,9 +26,7 @@ export default function LoginPage({
         <div style={styles.card}>
           <h2 style={{ marginTop: 0, marginBottom: 20 }}>Đăng nhập</h2>
 
-          {searchParams.error && (
-            <div style={styles.error}>{searchParams.error}</div>
-          )}
+          {error && <div style={styles.error}>{error}</div>}
 
           <form action={loginWeb}>
             <div style={styles.formGroup}>

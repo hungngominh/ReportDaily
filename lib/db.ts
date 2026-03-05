@@ -1,7 +1,6 @@
-import { neon } from "@neondatabase/serverless";
+import { neon, NeonQueryFunction } from "@neondatabase/serverless";
 
-// Lazy singleton - reuse connection across requests in same lambda
-let _sql: ReturnType<typeof neon> | null = null;
+let _sql: NeonQueryFunction<false, false> | null = null;
 
 export function getDb() {
   if (!_sql) {
@@ -10,6 +9,16 @@ export function getDb() {
     _sql = neon(url);
   }
   return _sql;
+}
+
+// Helper: run a tagged template query and always get rows back as an array
+export async function query(
+  strings: TemplateStringsArray,
+  ...values: unknown[]
+): Promise<Record<string, unknown>[]> {
+  const sql = getDb();
+  const result = await sql(strings, ...values);
+  return result as Record<string, unknown>[];
 }
 
 export interface User {

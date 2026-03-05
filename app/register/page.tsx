@@ -1,7 +1,13 @@
 import { register } from "@/lib/actions";
 import { styles } from "@/lib/styles";
 
-export default function RegisterPage() {
+export default async function RegisterPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
+  const { error } = await searchParams;
+
   return (
     <div
       style={{
@@ -19,6 +25,8 @@ export default function RegisterPage() {
 
         <div style={styles.card}>
           <h2 style={{ marginTop: 0, marginBottom: 20 }}>Đăng ký</h2>
+
+          {error && <div style={styles.error}>{error}</div>}
 
           <form action={register}>
             <div style={styles.formGroup}>
