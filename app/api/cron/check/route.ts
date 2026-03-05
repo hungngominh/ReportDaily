@@ -10,8 +10,19 @@ import {
 import type { UserConfig } from "@/lib/db";
 
 export async function GET(req: NextRequest) {
+  // Support multiple auth methods:
+  // 1. Authorization: Bearer <secret> (GitHub Actions)
+  // 2. x-vercel-cron-secret header (Vercel Cron — auto-injected, not from env)
+  // 3. ?secret=<secret> query param (cron-job.org, etc.)
   const authHeader = req.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  const querySecret = req.nextUrl.searchParams.get("secret");
+  const cronSecret = process.env.CRON_SECRET;
+
+  const isAuthed =
+    authHeader === `Bearer ${cronSecret}` ||
+    querySecret === cronSecret;
+
+  if (!isAuthed) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
