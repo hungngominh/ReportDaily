@@ -86,15 +86,44 @@ export function parseDayStatus(
   };
 }
 
-// Send message to Google Chat webhook
+// Send Card V2 message to Google Chat webhook with @all mention
 export async function sendWebhookNotification(
   webhookUrl: string,
   text: string
 ) {
+  const payload = {
+    text: "<users/all>",
+    cardsV2: [
+      {
+        cardId: "dailyReminder",
+        card: {
+          header: {
+            title: "Daily Report Reminder",
+            subtitle: text.split("\n")[0].replace(/\*/g, ""),
+            imageUrl:
+              "https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/notifications_active/default/48px.svg",
+            imageType: "CIRCLE",
+          },
+          sections: [
+            {
+              widgets: [
+                {
+                  textParagraph: {
+                    text: text.replace(/\n/g, "<br>"),
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      },
+    ],
+  };
+
   const res = await fetch(webhookUrl, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text }),
+    headers: { "Content-Type": "application/json; charset=UTF-8" },
+    body: JSON.stringify(payload),
   });
   if (!res.ok) throw new Error(`Webhook error: ${res.status}`);
   return res.json();

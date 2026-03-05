@@ -2,7 +2,7 @@
 
 import { useTransition } from "react";
 import { saveConfig, logout } from "@/lib/actions";
-import { styles } from "@/lib/styles";
+import { styles, t, icons } from "@/lib/styles";
 import type { UserConfig } from "@/lib/db";
 
 interface Props {
@@ -23,6 +23,31 @@ interface StatusResult {
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
+function Icon({ html, style }: { html: string; style?: React.CSSProperties }) {
+  return <span dangerouslySetInnerHTML={{ __html: html }} style={{ display: "inline-flex", ...style }} />;
+}
+
+function StatusBadge({ done }: { done: boolean }) {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 6,
+        fontSize: 13,
+        fontWeight: 500,
+        color: done ? t.success : t.danger,
+        background: done ? t.successBg : t.dangerBg,
+        padding: "4px 10px",
+        borderRadius: 20,
+      }}
+    >
+      <Icon html={done ? icons.check : icons.x} />
+      {done ? "Hoàn thành" : "Chưa"}
+    </span>
+  );
+}
+
 export function DashboardClient({ displayName, config, status }: Props) {
   const [saving, startSave] = useTransition();
   const [loggingOut, startLogout] = useTransition();
@@ -30,8 +55,16 @@ export function DashboardClient({ displayName, config, status }: Props) {
   const selectStyle: React.CSSProperties = {
     ...styles.input,
     width: "auto",
-    minWidth: 70,
-    padding: "8px 10px",
+    minWidth: 80,
+    padding: "8px 12px",
+    cursor: "pointer",
+  };
+
+  const textareaStyle: React.CSSProperties = {
+    ...styles.input,
+    resize: "vertical",
+    fontFamily: t.font,
+    lineHeight: 1.5,
   };
 
   return (
@@ -46,9 +79,30 @@ export function DashboardClient({ displayName, config, status }: Props) {
             marginBottom: 24,
           }}
         >
-          <h1 style={{ margin: 0, fontSize: 22 }}>📋 Daily Reminder</h1>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: 36,
+                height: 36,
+                borderRadius: 8,
+                background: t.primary,
+                color: "#fff",
+              }}
+            >
+              <Icon html={icons.clipboard} />
+            </div>
+            <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, letterSpacing: "-0.02em" }}>
+              Daily Reminder
+            </h1>
+          </div>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <span style={{ fontSize: 14, color: "#555" }}>👤 {displayName}</span>
+            <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: t.textMuted }}>
+              <Icon html={icons.user} />
+              {displayName}
+            </span>
             <form
               action={logout}
               onSubmit={(e) => {
@@ -56,8 +110,11 @@ export function DashboardClient({ displayName, config, status }: Props) {
                 startLogout(() => logout());
               }}
             >
-              <button style={{ ...styles.btnDanger, width: "auto" }} type="submit" disabled={loggingOut}>
-                {loggingOut ? "..." : "Đăng xuất"}
+              <button style={styles.btnDanger} type="submit" disabled={loggingOut}>
+                <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <Icon html={icons.logOut} />
+                  {loggingOut ? "..." : "Đăng xuất"}
+                </span>
               </button>
             </form>
           </div>
@@ -65,57 +122,71 @@ export function DashboardClient({ displayName, config, status }: Props) {
 
         {/* Today status */}
         <div style={{ ...styles.card, marginBottom: 16 }}>
-          <h3 style={{ marginTop: 0, marginBottom: 12 }}>📅 Trạng thái hôm nay</h3>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+            <Icon html={icons.calendar} style={{ color: t.primary }} />
+            <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>Trạng thái hôm nay</h3>
+            {status && !status.error && (
+              <span style={{ fontSize: 12, color: t.textLight, marginLeft: "auto" }}>
+                {status.dayKey.slice(0, 2)}/{status.dayKey.slice(2)}
+              </span>
+            )}
+          </div>
           {status?.error ? (
-            <div style={styles.error}>❌ {status.error}</div>
+            <div style={styles.error}>{status.error}</div>
           ) : status ? (
-            <>
-              <p style={{ margin: "0 0 8px", fontSize: 13, color: "#888" }}>
-                Ngày: {status.dayKey.slice(0, 2)}/{status.dayKey.slice(2)}
-              </p>
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
-                <tbody>
-                  {(
-                    [
-                      ["Báo cáo đầu ngày", status.hasStartReport],
-                      ["Check out", status.hasCheckOut],
-                      ["Báo cáo cuối ngày", status.hasEndReport],
-                    ] as [string, boolean][]
-                  ).map(([label, done]) => (
-                    <tr key={label}>
-                      <td style={{ padding: "7px 0", borderBottom: "1px solid #f0f0f0" }}>{label}</td>
-                      <td style={{ padding: "7px 0", borderBottom: "1px solid #f0f0f0" }}>
-                        {done ? "✅ Hoàn thành" : "❌ Chưa"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {(
+                [
+                  ["Báo cáo đầu ngày", status.hasStartReport],
+                  ["Check out", status.hasCheckOut],
+                  ["Báo cáo cuối ngày", status.hasEndReport],
+                ] as [string, boolean][]
+              ).map(([label, done]) => (
+                <div
+                  key={label}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: "10px 14px",
+                    background: t.bg,
+                    borderRadius: t.radiusSm,
+                  }}
+                >
+                  <span style={{ fontSize: 14, fontWeight: 500 }}>{label}</span>
+                  <StatusBadge done={done} />
+                </div>
+              ))}
               {status.info && (
                 <pre
                   style={{
-                    marginTop: 10,
-                    background: "#f5f5f5",
-                    padding: 10,
-                    borderRadius: 6,
+                    margin: 0,
+                    background: t.bg,
+                    padding: 12,
+                    borderRadius: t.radiusSm,
                     fontSize: 12,
                     whiteSpace: "pre-wrap",
+                    color: t.textMuted,
+                    border: `1px solid ${t.border}`,
                   }}
                 >
                   {status.info}
                 </pre>
               )}
-            </>
+            </div>
           ) : (
-            <p style={{ color: "#aaa", fontSize: 14 }}>
-              Chưa cấu hình tài khoản Alliance bên dưới.
+            <p style={{ color: t.textLight, fontSize: 14, margin: 0 }}>
+              Cấu hình tài khoản Alliance bên dưới để xem trạng thái.
             </p>
           )}
         </div>
 
         {/* Config form */}
         <div style={styles.card}>
-          <h3 style={{ marginTop: 0, marginBottom: 16 }}>⚙️ Cấu hình</h3>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20 }}>
+            <Icon html={icons.settings} style={{ color: t.primary }} />
+            <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>Cấu hình</h3>
+          </div>
 
           <form
             action={saveConfig}
@@ -126,9 +197,7 @@ export function DashboardClient({ displayName, config, status }: Props) {
             }}
           >
             {/* Account section */}
-            <p style={{ fontSize: 13, fontWeight: 700, color: "#555", margin: "0 0 12px" }}>
-              Tài khoản Alliance
-            </p>
+            <p style={styles.sectionTitle}>Tài khoản Alliance</p>
             <div style={styles.formGroup}>
               <label style={styles.label}>Email</label>
               <input
@@ -164,16 +233,17 @@ export function DashboardClient({ displayName, config, status }: Props) {
             </div>
 
             {/* Schedule section */}
-            <div style={{ borderTop: "1px solid #f0f0f0", margin: "20px 0 16px", paddingTop: 16 }}>
-              <p style={{ fontSize: 13, fontWeight: 700, color: "#555", margin: "0 0 12px" }}>
-                ⏰ Lịch nhắc nhở
-              </p>
+            <div style={styles.divider}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 12 }}>
+                <Icon html={icons.clock} style={{ color: t.primary }} />
+                <p style={{ ...styles.sectionTitle, margin: 0 }}>Lịch nhắc nhở</p>
+              </div>
 
               {/* Morning */}
               <div style={styles.formGroup}>
                 <label style={styles.label}>Nhắc báo cáo đầu ngày</label>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                  <span style={{ fontSize: 13 }}>Từ</span>
+                  <span style={{ fontSize: 13, color: t.textMuted }}>Từ</span>
                   <select name="morning_start" defaultValue={config?.morning_start ?? 11} style={selectStyle}>
                     {HOURS.map((h) => (
                       <option key={h} value={h}>
@@ -181,7 +251,7 @@ export function DashboardClient({ displayName, config, status }: Props) {
                       </option>
                     ))}
                   </select>
-                  <span style={{ fontSize: 13 }}>đến</span>
+                  <span style={{ fontSize: 13, color: t.textMuted }}>đến</span>
                   <select name="morning_end" defaultValue={config?.morning_end ?? 12} style={selectStyle}>
                     {HOURS.map((h) => (
                       <option key={h} value={h}>
@@ -196,7 +266,7 @@ export function DashboardClient({ displayName, config, status }: Props) {
               <div style={styles.formGroup}>
                 <label style={styles.label}>Nhắc báo cáo cuối ngày</label>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                  <span style={{ fontSize: 13 }}>Từ</span>
+                  <span style={{ fontSize: 13, color: t.textMuted }}>Từ</span>
                   <select name="evening_start" defaultValue={config?.evening_start ?? 19} style={selectStyle}>
                     {HOURS.map((h) => (
                       <option key={h} value={h}>
@@ -204,7 +274,7 @@ export function DashboardClient({ displayName, config, status }: Props) {
                       </option>
                     ))}
                   </select>
-                  <span style={{ fontSize: 13 }}>đến</span>
+                  <span style={{ fontSize: 13, color: t.textMuted }}>đến</span>
                   <select name="evening_end" defaultValue={config?.evening_end ?? 20} style={selectStyle}>
                     {HOURS.map((h) => (
                       <option key={h} value={h}>
@@ -226,18 +296,23 @@ export function DashboardClient({ displayName, config, status }: Props) {
                       </option>
                     ))}
                   </select>
-                  <span style={{ fontSize: 13 }}>phút / lần</span>
+                  <span style={{ fontSize: 13, color: t.textMuted }}>phút / lần</span>
                 </div>
               </div>
             </div>
 
-            {/* Message templates section */}
-            <div style={{ borderTop: "1px solid #f0f0f0", margin: "20px 0 16px", paddingTop: 16 }}>
-              <p style={{ fontSize: 13, fontWeight: 700, color: "#555", margin: "0 0 4px" }}>
-                💬 Nội dung tin nhắn
-              </p>
-              <p style={{ fontSize: 12, color: "#888", margin: "0 0 12px" }}>
-                Biến hỗ trợ: <code>{"{name}"}</code> = tên, <code>{"{date}"}</code> = ngày, <code>{"{time}"}</code> = giờ. Để trống = dùng mặc định.
+            {/* Message templates */}
+            <div style={styles.divider}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                <Icon html={icons.message} style={{ color: t.primary }} />
+                <p style={{ ...styles.sectionTitle, margin: 0 }}>Nội dung tin nhắn</p>
+              </div>
+              <p style={{ fontSize: 12, color: t.textLight, margin: "0 0 12px" }}>
+                Biến hỗ trợ:{" "}
+                <code style={{ background: t.bg, padding: "2px 5px", borderRadius: 3, fontSize: 11 }}>{"{name}"}</code>{" "}
+                <code style={{ background: t.bg, padding: "2px 5px", borderRadius: 3, fontSize: 11 }}>{"{date}"}</code>{" "}
+                <code style={{ background: t.bg, padding: "2px 5px", borderRadius: 3, fontSize: 11 }}>{"{time}"}</code>
+                {" "}— Để trống = mặc định
               </p>
 
               <div style={styles.formGroup}>
@@ -246,8 +321,8 @@ export function DashboardClient({ displayName, config, status }: Props) {
                   name="morning_message"
                   rows={3}
                   defaultValue={config?.morning_message ?? ""}
-                  placeholder={"⏰ *{name}* ơi! Hôm nay {date} rồi mà chưa report đầu ngày 🙏"}
-                  style={{ ...styles.input, resize: "vertical", fontFamily: "inherit" }}
+                  placeholder={"*{name}* ơi! Hôm nay {date} rồi mà chưa report đầu ngày"}
+                  style={textareaStyle}
                 />
               </div>
               <div style={styles.formGroup}>
@@ -256,28 +331,33 @@ export function DashboardClient({ displayName, config, status }: Props) {
                   name="evening_message"
                   rows={3}
                   defaultValue={config?.evening_message ?? ""}
-                  placeholder={"🌙 *{name}* ơi! {time} rồi, check out và report cuối ngày đi nào 🙏"}
-                  style={{ ...styles.input, resize: "vertical", fontFamily: "inherit" }}
+                  placeholder={"*{name}* ơi! {time} rồi, check out và report cuối ngày đi"}
+                  style={textareaStyle}
                 />
               </div>
             </div>
 
-            {/* Enable toggle */}
-            <div style={{ ...styles.formGroup, display: "flex", alignItems: "center", gap: 8 }}>
-              <input
-                name="enabled"
-                type="checkbox"
-                id="enabled"
-                defaultChecked={config?.enabled ?? true}
-                style={{ width: 16, height: 16 }}
-              />
-              <label htmlFor="enabled" style={{ ...styles.label, margin: 0, fontWeight: 400 }}>
-                Bật nhắc nhở tự động
-              </label>
+            {/* Enable toggle + Save */}
+            <div style={{ borderTop: `1px solid ${t.border}`, paddingTop: 16, marginTop: 4 }}>
+              <div style={{ ...styles.formGroup, display: "flex", alignItems: "center", gap: 10 }}>
+                <input
+                  name="enabled"
+                  type="checkbox"
+                  id="enabled"
+                  defaultChecked={config?.enabled ?? true}
+                  style={{ width: 18, height: 18, accentColor: t.primary, cursor: "pointer" }}
+                />
+                <label htmlFor="enabled" style={{ ...styles.label, margin: 0, fontWeight: 500, cursor: "pointer" }}>
+                  Bật nhắc nhở tự động
+                </label>
+              </div>
+              <button type="submit" style={styles.btn} disabled={saving}>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 8, justifyContent: "center" }}>
+                  <Icon html={icons.save} />
+                  {saving ? "Đang lưu..." : "Lưu cấu hình"}
+                </span>
+              </button>
             </div>
-            <button type="submit" style={styles.btn} disabled={saving}>
-              {saving ? "Đang lưu..." : "💾 Lưu cấu hình"}
-            </button>
           </form>
         </div>
       </div>
