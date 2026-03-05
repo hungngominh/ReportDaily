@@ -92,12 +92,16 @@ export async function saveConfig(formData: FormData): Promise<void> {
   const eveningStart = parseInt(formData.get("evening_start") as string) || 19;
   const eveningEnd = parseInt(formData.get("evening_end") as string) || 20;
   const intervalMinutes = parseInt(formData.get("interval_minutes") as string) || 1;
+  const morningMessage = (formData.get("morning_message") as string ?? "").trim();
+  const eveningMessage = (formData.get("evening_message") as string ?? "").trim();
 
   await query`
     INSERT INTO user_configs (user_id, api_username, api_password, webhook_url, enabled,
-      morning_start, morning_end, evening_start, evening_end, interval_minutes, updated_at)
+      morning_start, morning_end, evening_start, evening_end, interval_minutes,
+      morning_message, evening_message, updated_at)
     VALUES (${session.userId}, ${apiUsername}, ${apiPassword}, ${webhookUrl}, ${enabled},
-      ${morningStart}, ${morningEnd}, ${eveningStart}, ${eveningEnd}, ${intervalMinutes}, NOW())
+      ${morningStart}, ${morningEnd}, ${eveningStart}, ${eveningEnd}, ${intervalMinutes},
+      ${morningMessage}, ${eveningMessage}, NOW())
     ON CONFLICT (user_id) DO UPDATE SET
       api_username     = EXCLUDED.api_username,
       api_password     = EXCLUDED.api_password,
@@ -108,6 +112,8 @@ export async function saveConfig(formData: FormData): Promise<void> {
       evening_start    = EXCLUDED.evening_start,
       evening_end      = EXCLUDED.evening_end,
       interval_minutes = EXCLUDED.interval_minutes,
+      morning_message  = EXCLUDED.morning_message,
+      evening_message  = EXCLUDED.evening_message,
       updated_at       = NOW()
   `;
 

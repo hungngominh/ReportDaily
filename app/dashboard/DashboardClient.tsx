@@ -231,6 +231,37 @@ export function DashboardClient({ displayName, config, status }: Props) {
               </div>
             </div>
 
+            {/* Message templates section */}
+            <div style={{ borderTop: "1px solid #f0f0f0", margin: "20px 0 16px", paddingTop: 16 }}>
+              <p style={{ fontSize: 13, fontWeight: 700, color: "#555", margin: "0 0 4px" }}>
+                💬 Nội dung tin nhắn
+              </p>
+              <p style={{ fontSize: 12, color: "#888", margin: "0 0 12px" }}>
+                Biến hỗ trợ: <code>{"{name}"}</code> = tên, <code>{"{date}"}</code> = ngày, <code>{"{time}"}</code> = giờ. Để trống = dùng mặc định.
+              </p>
+
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Nhắc đầu ngày</label>
+                <textarea
+                  name="morning_message"
+                  rows={3}
+                  defaultValue={config?.morning_message ?? ""}
+                  placeholder={"⏰ *{name}* ơi! Hôm nay {date} rồi mà chưa report đầu ngày 🙏"}
+                  style={{ ...styles.input, resize: "vertical", fontFamily: "inherit" }}
+                />
+              </div>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Nhắc cuối ngày</label>
+                <textarea
+                  name="evening_message"
+                  rows={3}
+                  defaultValue={config?.evening_message ?? ""}
+                  placeholder={"🌙 *{name}* ơi! {time} rồi, check out và report cuối ngày đi nào 🙏"}
+                  style={{ ...styles.input, resize: "vertical", fontFamily: "inherit" }}
+                />
+              </div>
+            </div>
+
             {/* Enable toggle */}
             <div style={{ ...styles.formGroup, display: "flex", alignItems: "center", gap: 8 }}>
               <input

@@ -36,4 +36,8 @@ await sql`ALTER TABLE user_configs ADD COLUMN IF NOT EXISTS interval_minutes INT
 await sql`ALTER TABLE user_configs ADD COLUMN IF NOT EXISTS last_morning_sent TIMESTAMPTZ`;
 await sql`ALTER TABLE user_configs ADD COLUMN IF NOT EXISTS last_evening_sent TIMESTAMPTZ`;
 
+// v3: add custom message templates
+await sql`ALTER TABLE user_configs ADD COLUMN IF NOT EXISTS morning_message TEXT NOT NULL DEFAULT ''`;
+await sql`ALTER TABLE user_configs ADD COLUMN IF NOT EXISTS evening_message TEXT NOT NULL DEFAULT ''`;
+
 console.log("Done. Tables: users, user_configs created/updated.");

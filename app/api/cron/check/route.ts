@@ -77,19 +77,29 @@ export async function GET(req: NextRequest) {
       let message = "";
       let shouldNotify = false;
 
+      const vars: Record<string, string> = {
+        "{name}": userName,
+        "{date}": dateStr,
+        "{time}": timeStr,
+      };
+      const applyTemplate = (tpl: string) =>
+        Object.entries(vars).reduce((s, [k, v]) => s.replaceAll(k, v), tpl);
+
       if (inMorning && !status.hasStartReport) {
-        message =
-          `⏰ *Nhắc nhở báo cáo đầu ngày - ${dateStr}* (${timeStr})\n\n` +
-          `❌ *${userName}* chưa báo cáo task đầu ngày!\n\n` +
-          `Vui lòng report task đầu ngày ngay nhé 🙏`;
+        message = cfg.morning_message
+          ? applyTemplate(cfg.morning_message)
+          : `⏰ *Nhắc nhở báo cáo đầu ngày - ${dateStr}* (${timeStr})\n\n` +
+            `❌ *${userName}* chưa báo cáo task đầu ngày!\n\n` +
+            `Vui lòng report task đầu ngày ngay nhé 🙏`;
         shouldNotify = true;
       }
 
       if (inEvening && !status.hasEndReport) {
-        message =
-          `🌙 *Nhắc nhở báo cáo cuối ngày - ${dateStr}* (${timeStr})\n\n` +
-          `❌ *${userName}* chưa báo cáo cuối ngày!\n\n` +
-          `Vui lòng check out và report cuối ngày trước khi nghỉ 🙏`;
+        message = cfg.evening_message
+          ? applyTemplate(cfg.evening_message)
+          : `🌙 *Nhắc nhở báo cáo cuối ngày - ${dateStr}* (${timeStr})\n\n` +
+            `❌ *${userName}* chưa báo cáo cuối ngày!\n\n` +
+            `Vui lòng check out và report cuối ngày trước khi nghỉ 🙏`;
         shouldNotify = true;
       }
 

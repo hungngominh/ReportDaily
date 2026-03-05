@@ -43,5 +43,7 @@ export interface UserConfig {
   interval_minutes: number;
   last_morning_sent: string | null;
   last_evening_sent: string | null;
+  morning_message: string;
+  evening_message: string;
   updated_at: string;
 }
