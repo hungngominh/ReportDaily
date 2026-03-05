@@ -1,86 +1,94 @@
-# Daily Report Reminder
+# Daily Report Reminder — Multi-user
 
-Tự động nhắc nhở báo cáo đầu ngày và cuối ngày qua Google Chat.
+Ứng dụng Next.js tự động nhắc nhở báo cáo đầu ngày / cuối ngày qua Google Chat.
+Mỗi người dùng tự đăng ký, cấu hình tài khoản Alliance và webhook riêng.
 
 ## Tính năng
 
-- **11:00 – 12:00**: Spam nhắc mỗi phút nếu chưa báo cáo task đầu ngày
-- **19:00 – 20:00**: Spam nhắc mỗi phút nếu chưa check out / báo cáo cuối ngày
+- Đăng ký / đăng nhập tài khoản web
+- Mỗi user tự cấu hình email/mật khẩu Alliance + Google Chat webhook
+- **11:00 – 12:00**: Spam nhắc mỗi phút nếu chưa báo cáo đầu ngày
+- **19:00 – 20:00**: Spam nhắc mỗi phút nếu chưa báo cáo cuối ngày
 - Tự động dừng khi đã hoàn thành
-- Trang web hiển thị trạng thái hôm nay
+- Dashboard xem trạng thái hôm nay
 
-## Deploy lên Vercel
+## Hướng dẫn deploy
 
-### Bước 1: Push lên GitHub
+### Bước 1 — Tạo database Neon (miễn phí)
+
+1. Vào [console.neon.tech](https://console.neon.tech) → **New Project**
+2. Copy **Connection string** (dạng `postgresql://...`)
+3. Chạy migration tạo bảng:
+   ```bash
+   npm install
+   DATABASE_URL="postgresql://..." node scripts/migrate.mjs
+   ```
+
+### Bước 2 — Push lên GitHub
 
 ```bash
-git init
-git add .
-git commit -m "Initial commit"
 git remote add origin https://github.com/YOUR_USERNAME/report-daily-reminder.git
-git push -u origin main
+git push -u origin master
 ```
 
-### Bước 2: Import vào Vercel
+### Bước 3 — Import vào Vercel
 
-1. Vào [vercel.com](https://vercel.com) → **Add New Project**
-2. Import repo từ GitHub
-3. Framework: **Next.js** (tự detect)
-4. Click **Deploy**
+1. [vercel.com](https://vercel.com) → **Add New Project** → Import từ GitHub
+2. Framework: **Next.js** (tự detect) → **Deploy**
 
-### Bước 3: Cấu hình Environment Variables
+### Bước 4 — Environment Variables
 
 Vào **Project Settings → Environment Variables**, thêm:
 
-| Tên biến | Giá trị |
-|----------|---------|
-| `API_USERNAME` | Email đăng nhập (vd: `hung.ngominh@allianceitsc.com`) |
-| `API_PASSWORD` | Mật khẩu đăng nhập |
-| `WEBHOOK_URL` | Google Chat webhook URL |
-| `CRON_SECRET` | Chuỗi bí mật bất kỳ (tạo bằng `openssl rand -hex 32`) |
+| Biến | Giá trị |
+|------|---------|
+| `DATABASE_URL` | Connection string từ Neon |
+| `JWT_SECRET` | Chuỗi ngẫu nhiên (32+ ký tự) |
+| `CRON_SECRET` | Chuỗi ngẫu nhiên (32+ ký tự) |
 
-### Bước 4: Bật Cron Jobs
+Tạo secret ngẫu nhiên:
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
 
-Vercel Cron hoạt động tự động theo cấu hình trong `vercel.json`:
+### Bước 5 — Redeploy
+
+Sau khi thêm env vars, vào **Deployments → Redeploy**.
+
+### Bước 6 — Sử dụng
+
+1. Mở web → click **Đăng ký** → tạo tài khoản
+2. Vào **Dashboard** → điền email/mật khẩu Alliance + Webhook URL → **Lưu**
+3. Done! Cron tự chạy mỗi phút trong khung giờ đã định
+
+---
+
+## Cron schedule
 
 ```json
-{
-  "crons": [
-    {
-      "path": "/api/cron/check",
-      "schedule": "* 4,5,12,13 * * 1-5"
-    }
-  ]
-}
+{ "schedule": "* 4,5,12,13 * * 1-5" }
 ```
 
-> Cron chạy mỗi phút trong các giờ UTC 4-5 (ICT 11-12) và 12-13 (ICT 19-20), thứ 2 đến thứ 6.
+| UTC | ICT | Mục đích |
+|-----|-----|----------|
+| 04:xx – 05:xx | 11:xx – 12:xx | Nhắc báo cáo đầu ngày |
+| 12:xx – 13:xx | 19:xx – 20:xx | Nhắc báo cáo cuối ngày |
 
-> **Lưu ý**: Vercel Cron yêu cầu plan **Hobby** (miễn phí) trở lên. Trên Hobby, cron chạy tối thiểu mỗi ngày 1 lần; để chạy mỗi phút cần **Pro plan**. Xem thêm: https://vercel.com/docs/cron-jobs
-
-### Bước 5: Cấu hình CRON_SECRET trên Vercel
-
-Vercel tự động truyền `CRON_SECRET` vào header `Authorization: Bearer <secret>` khi gọi cron endpoint. Đặt cùng giá trị trong Environment Variables.
-
-## Chạy local
-
-```bash
-# Cài dependencies
-npm install
-
-# Copy env
-cp .env.example .env.local
-# Điền thông tin vào .env.local
-
-# Chạy dev server
-npm run dev
-```
-
-Mở [http://localhost:3000](http://localhost:3000) để xem trạng thái hôm nay.
+> **Vercel Hobby (miễn phí)**: tối đa 2 cron jobs, chạy mỗi phút.
+> Xem: https://vercel.com/docs/cron-jobs
 
 ## Test cron thủ công
 
 ```bash
 curl -H "Authorization: Bearer YOUR_CRON_SECRET" \
   https://your-app.vercel.app/api/cron/check
+```
+
+## Chạy local
+
+```bash
+cp .env.example .env.local
+# Điền DATABASE_URL, JWT_SECRET, CRON_SECRET
+npm install
+npm run dev
 ```
