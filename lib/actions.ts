@@ -101,7 +101,7 @@ export async function saveConfig(formData: FormData) {
       updated_at   = NOW()
   `;
 
-  return { success: true };
+  redirect("/dashboard");
 }
 
 // ── Get current user config ───────────────────────────────────────────────────
